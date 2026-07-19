@@ -1,0 +1,88 @@
+:root {
+  color: #f7f7fb;
+  background: #101019;
+  font-family: "Pretendard", "Malgun Gothic", system-ui, sans-serif;
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: radial-gradient(circle at 12% 0%, #2a1b3e 0, transparent 32rem), #101019; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; opacity: .55; }
+
+.shell { width: min(920px, calc(100% - 44px)); margin: 0 auto; padding: 42px 0 28px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 29px; }
+.brand, .account-actions, .path-control, .action-row, .result-card { display: flex; align-items: center; }
+.brand { gap: 14px; }
+.brand-mark { display: grid; place-items: center; width: 43px; height: 43px; border-radius: 14px; background: linear-gradient(135deg, #fc815d, #ef3670 48%, #8f42dc); font-size: 25px; font-weight: 800; box-shadow: 0 9px 28px rgba(239,54,112,.22); }
+h1, h2, p { margin: 0; }
+h1 { font-size: 22px; letter-spacing: -.035em; }
+h2 { font-size: 24px; letter-spacing: -.04em; }
+.eyebrow { color: #ae9bbd; font-size: 10px; font-weight: 750; letter-spacing: .13em; }
+.account-actions { justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
+.session-note { width: 100%; color: #a7a5b1; font-size: 12px; text-align: right; }
+
+.button, .text-button { border: 0; border-radius: 10px; font-weight: 700; transition: transform .15s ease, background .15s ease; }
+.button:hover:not(:disabled) { transform: translateY(-1px); }
+.button { padding: 10px 15px; }
+.button-primary { min-width: 148px; color: #fff; background: linear-gradient(100deg, #ec406f, #9a46db); box-shadow: 0 9px 21px rgba(166,53,184,.24); }
+.button-secondary { color: #eae6f0; background: #292733; border: 1px solid #41404d; }
+.button-danger { color: #ffcdd6; background: #3a202b; border: 1px solid #753b4d; }
+.text-button { padding: 8px; color: #c9c3d1; background: transparent; font-size: 13px; }
+
+.notice { display: flex; gap: 10px; padding: 13px 15px; margin-bottom: 18px; color: #d6cfde; border: 1px solid #3b3445; border-radius: 12px; background: rgba(42, 36, 51, .68); font-size: 13px; line-height: 1.55; }
+.notice-icon { flex: 0 0 auto; display: grid; place-items: center; width: 18px; height: 18px; margin-top: 1px; border: 1px solid #b9a9cc; border-radius: 50%; color: #d9c7ed; font-family: Georgia, serif; font-weight: 700; font-size: 12px; }
+
+.panel { padding: 30px; border: 1px solid #34323e; border-radius: 18px; background: rgba(26,25,34,.9); box-shadow: 0 23px 60px rgba(0,0,0,.18); }
+.panel-heading { display: flex; align-items: start; justify-content: space-between; margin-bottom: 27px; }
+.panel-heading .eyebrow { margin-bottom: 6px; }
+.status-pill { padding: 7px 9px; border: 1px solid #4a4756; border-radius: 999px; color: #b6b2bd; background: #22212a; font-size: 11px; }
+.status-pill[data-state="ready"] { border-color: #275a4a; color: #9ce0bc; background: #18352b; }
+.status-pill[data-state="error"] { border-color: #73414c; color: #ffb6c0; background: #3a2229; }
+
+.field { display: grid; gap: 8px; color: #e4e0e9; font-size: 13px; font-weight: 680; }
+.field em { color: #a7a1ac; font-weight: 500; font-style: normal; }
+.field small, .check-row small { color: #98939f; font-size: 11px; font-weight: 450; line-height: 1.5; }
+input, select { width: 100%; min-width: 0; padding: 12px 13px; color: #f9f7fc; border: 1px solid #494653; border-radius: 10px; outline: none; background: #16151d; }
+input:focus, select:focus { border-color: #cf67cb; box-shadow: 0 0 0 3px rgba(207,103,203,.14); }
+input[readonly] { color: #c2bdc8; }
+.field-wide { grid-column: 1 / -1; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 22px; }
+.path-control { gap: 9px; }
+.path-control input { flex: 1; }
+.path-control .button { flex: 0 0 auto; white-space: nowrap; }
+.check-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 24px; padding: 14px; border: 1px solid #393743; border-radius: 11px; background: #1a1921; cursor: pointer; }
+.check-row input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: #ce5ec2; }
+.check-row span { display: grid; gap: 3px; font-size: 13px; }
+.action-row { gap: 16px; margin-top: 26px; }
+.form-message { color: #a7a2af; font-size: 12px; line-height: 1.45; }
+.form-message[data-state="error"] { color: #ffadba; }
+.form-message[data-state="success"] { color: #9fe1bb; }
+
+.progress-area { margin-top: 24px; padding: 16px 0 0; border-top: 1px solid #373541; }
+.progress-label { display: flex; justify-content: space-between; margin-bottom: 9px; color: #c9c4d0; font-size: 12px; }
+.progress-label strong { color: #f1caee; }
+.progress-track { height: 7px; overflow: hidden; border-radius: 999px; background: #363440; }
+.progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #ec406f, #a64bdf); transition: width .2s ease; }
+
+.result-card { gap: 15px; margin-top: 18px; padding: 19px 20px; border: 1px solid #2e5e4d; border-radius: 15px; color: #e5f5e9; background: #173126; }
+.result-icon { display: grid; place-items: center; flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; background: #42a773; font-weight: 900; }
+.result-card .eyebrow { color: #9bd0b1; margin-bottom: 3px; }
+.result-card h2 { font-size: 15px; }
+.result-card p:last-child { max-width: 530px; margin-top: 5px; overflow: hidden; color: #c0d9c8; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.result-card .button { margin-left: auto; }
+footer { margin-top: 19px; color: #817b88; font-size: 11px; text-align: center; line-height: 1.55; }
+
+@media (max-width: 700px) {
+  .shell { width: min(100% - 28px, 620px); padding-top: 25px; }
+  .topbar, .account-actions { align-items: flex-start; flex-direction: column; }
+  .session-note { text-align: left; }
+  .account-actions { gap: 5px; }
+  .panel { padding: 22px 18px; }
+  .form-grid { grid-template-columns: 1fr; }
+  .field-wide { grid-column: auto; }
+  .action-row { align-items: flex-start; flex-direction: column; }
+  .result-card { align-items: flex-start; flex-wrap: wrap; }
+  .result-card .button { margin-left: 0; }
+}

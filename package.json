@@ -1,0 +1,67 @@
+{
+  "name": "instagram-reels-downloader",
+  "version": "1.1.2",
+  "private": true,
+    "description": "내 Instagram 릴스와 동영상 스토리를 저장하는 Windows 데스크톱 앱",
+  "main": "out/main/index.js",
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "tsc --noEmit && electron-vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "tools:download": "node scripts/download-ytdlp.mjs",
+    "package:win": "npm run tools:download && npm run build && electron-builder --win nsis"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "electron": "^43.1.1",
+    "electron-builder": "^26.0.12",
+    "electron-vite": "^4.0.0",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  },
+  "build": {
+    "appId": "com.local.instagramreelsdownloader",
+    "productName": "Instagram 릴스 다운로더",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "out/**",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/yt-dlp.exe",
+        "to": "yt-dlp.exe"
+      },
+      {
+        "from": "resources/THIRD_PARTY_NOTICES.md",
+        "to": "THIRD_PARTY_NOTICES.md"
+      }
+    ],
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh",
+      "installerLanguages": [
+        "ko-KR"
+      ]
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    }
+  }
+}
