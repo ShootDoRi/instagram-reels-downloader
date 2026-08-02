@@ -6,6 +6,8 @@
 
 [English](README.en.md) | 한국어
 
+![Instagram 릴스·스토리 다운로더 앱 화면](docs/assets/app-overview.png)
+
 본인이 소유하거나 저장 권한이 있는 Instagram 릴스와 동영상 스토리를
 로컬 MP4 파일로 보관하는 Windows 데스크톱 앱입니다. Electron/TypeScript로
 구현되며, 별도 Chrome 또는 Edge 창에서 사용자가 직접 로그인합니다.
