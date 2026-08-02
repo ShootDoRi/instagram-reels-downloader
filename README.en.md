@@ -47,7 +47,7 @@ networks are outside the current scope.
 2. Verify the installer checksum in PowerShell:
 
    ```powershell
-   Get-FileHash -LiteralPath '.\Instagram 릴스 다운로더 Setup 1.1.3.exe' -Algorithm SHA256
+   Get-FileHash -LiteralPath '.\Instagram-Reels-Downloader-Setup-1.1.3.exe' -Algorithm SHA256
    ```
 
 3. Run the installer only when the checksum matches `SHA256SUMS.txt`.
