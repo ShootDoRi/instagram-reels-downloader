@@ -1,6 +1,6 @@
 import { spawn, type ChildProcessWithoutNullStreams, type SpawnOptionsWithoutStdio } from 'node:child_process'
 import { access, mkdir, readdir, rm, writeFile } from 'node:fs/promises'
-import { basename, join } from 'node:path'
+import { basename, dirname, join, parse } from 'node:path'
 import type { Cookie } from 'electron'
 import type { DownloadProgress, DownloadRequest, DownloadResult } from '../shared/contracts'
 import { makeDefaultFileStem, sanitizeFileStem } from '../shared/file-name'
@@ -9,6 +9,7 @@ import { createTemporaryCookieFile, removeTemporaryCookieDirectory } from './coo
 import { buildDownloadArgs, buildInfoArgs } from './ytdlp-args'
 
 interface MediaInfo {
+  _type?: string
   id?: string
   title?: string
   description?: string
@@ -16,12 +17,13 @@ interface MediaInfo {
   webpage_url?: string
   width?: number
   height?: number
+  entries?: MediaInfo[]
 }
 
 interface ActiveDownload {
   child: ChildProcessWithoutNullStreams
   cancelled: boolean
-  outputPath: string
+  outputPaths: Set<string>
 }
 
 export interface DownloadServiceOptions {
@@ -34,6 +36,9 @@ export interface DownloadServiceOptions {
 
 function mapDownloadError(value: string): string {
   const normalized = value.toLowerCase()
+  if (normalized.includes('no video') || normalized.includes('no entries')) {
+    return '현재 접근 가능한 동영상 스토리가 없습니다. 스토리가 만료되지 않았는지 확인해 주세요.'
+  }
   if (normalized.includes('private') || normalized.includes('login required') || normalized.includes('not logged in')) {
     return '이 콘텐츠에 접근할 수 없습니다. Instagram 로그인 상태와 스토리 공개 시간을 확인해 주세요.'
   }
@@ -87,6 +92,15 @@ async function uniqueFileStem(directory: string, desiredStem: string): Promise<s
   throw new Error('같은 이름의 파일이 너무 많습니다. 다른 파일명을 입력해 주세요.')
 }
 
+async function uniqueCollectionStem(directory: string, desiredStem: string): Promise<string> {
+  const entries = await readdir(directory).catch(() => [] as string[])
+  for (let index = 0; index < 10_000; index += 1) {
+    const candidate = index === 0 ? desiredStem : `${desiredStem} (${index})`
+    if (!entries.some((entry) => entry.startsWith(`${candidate}_`))) return candidate
+  }
+  throw new Error('같은 이름의 파일이 너무 많습니다. 다른 파일명을 입력해 주세요.')
+}
+
 function runJsonCommand(
   spawnCommand: (command: string, args: readonly string[], options: SpawnOptionsWithoutStdio) => ChildProcessWithoutNullStreams,
   executable: string,
@@ -114,17 +128,34 @@ function runJsonCommand(
 
 function runDownloadCommand(
   active: ActiveDownload,
-  onProgress: (progress: DownloadProgress) => void
-): Promise<string | undefined> {
+  onProgress: (progress: DownloadProgress) => void,
+  totalItems: number
+): Promise<string[]> {
   return new Promise((resolve, reject) => {
     const child = active.child
     let stderr = ''
-    let outputPath: string | undefined
+    const outputPaths: string[] = []
     const processLine = (line: string) => {
       const progress = parseProgress(line)
-      if (progress) onProgress(progress)
+      if (progress) {
+        const itemNumber = Math.min(outputPaths.length + 1, totalItems)
+        const percent = totalItems > 1
+          ? ((outputPaths.length + progress.percent / 100) / totalItems) * 100
+          : progress.percent
+        onProgress({
+          ...progress,
+          percent,
+          message: totalItems > 1 ? `동영상 ${itemNumber}/${totalItems} 저장 중…` : progress.message
+        })
+      }
+      const started = /^START:(.+)$/m.exec(line)
+      if (started) active.outputPaths.add(started[1].trim())
       const result = /^RESULT:(.+)$/m.exec(line)
-      if (result) outputPath = result[1].trim()
+      if (result) {
+        const path = result[1].trim()
+        active.outputPaths.add(path)
+        if (!outputPaths.includes(path)) outputPaths.push(path)
+      }
     }
     let pendingStdout = ''
     child.stdout.setEncoding('utf8')
@@ -141,7 +172,7 @@ function runDownloadCommand(
       if (pendingStdout) processLine(pendingStdout)
       if (active.cancelled) return reject(new Error('다운로드를 취소했습니다.'))
       if (code !== 0) return reject(new Error(mapDownloadError(stderr)))
-      resolve(outputPath)
+      resolve(outputPaths)
     })
   })
 }
@@ -167,7 +198,7 @@ export class DownloadService {
     this.busy = true
 
     let cookieDirectory: string | undefined
-    let outputPath: string | undefined
+    const cleanupPaths = new Set<string>()
     try {
       const media = parseInstagramMediaUrl(request.url)
       if (!request.directory.trim()) throw new Error('저장 폴더를 선택해 주세요.')
@@ -183,34 +214,75 @@ export class DownloadService {
       const cookieFile = await createTemporaryCookieFile(this.options.tempRoot, cookies)
       cookieDirectory = cookieFile.directory
 
-      this.options.onProgress({ percent: 0, message: '릴스 정보를 확인 중…' })
-      const info = await runJsonCommand(this.spawnCommand, this.options.ytdlpPath, buildInfoArgs(media.canonicalUrl, cookieFile.filePath))
+      this.options.onProgress({ percent: 0, message: 'Instagram 영상 정보를 확인 중…' })
+      const info = await runJsonCommand(
+        this.spawnCommand,
+        this.options.ytdlpPath,
+        buildInfoArgs(media.canonicalUrl, cookieFile.filePath, media.isCollection)
+      )
+      const items = media.isCollection ? (info.entries ?? []).filter((entry) => Boolean(entry.id)) : [info]
+      if (items.length === 0) {
+        throw new Error('현재 접근 가능한 동영상 스토리가 없습니다. 스토리가 만료되지 않았는지 확인해 주세요.')
+      }
+      const firstItem = items[0]
       const suggestedStem = request.fileName.trim()
-        ? sanitizeFileStem(request.fileName, makeDefaultFileStem(info.upload_date, media.mediaId))
-        : makeDefaultFileStem(info.upload_date, media.mediaId)
-      const stem = await uniqueFileStem(request.directory, suggestedStem)
-      outputPath = join(request.directory, `${stem}.mp4`)
+        ? sanitizeFileStem(request.fileName, makeDefaultFileStem(firstItem.upload_date, media.mediaId))
+        : makeDefaultFileStem(firstItem.upload_date, media.mediaId)
+      const stem = media.isCollection
+        ? await uniqueCollectionStem(request.directory, suggestedStem)
+        : await uniqueFileStem(request.directory, suggestedStem)
+      const outputTemplate = media.isCollection
+        ? join(request.directory, `${stem}_%(playlist_index)02d_%(id)s.%(ext)s`)
+        : join(request.directory, `${stem}.%(ext)s`)
       const child = this.spawnCommand(this.options.ytdlpPath, buildDownloadArgs({
         url: media.canonicalUrl,
         cookiePath: cookieFile.filePath,
-        outputTemplate: join(request.directory, `${stem}.%(ext)s`),
-        quality: request.quality
+        outputTemplate,
+        quality: request.quality,
+        allowPlaylist: media.isCollection
       }), { shell: false, windowsHide: true })
-      this.active = { child, cancelled: false, outputPath }
-      const downloadPromise = runDownloadCommand(this.active, this.options.onProgress)
+      this.active = { child, cancelled: false, outputPaths: cleanupPaths }
+      if (!media.isCollection) cleanupPaths.add(join(request.directory, `${stem}.mp4`))
+      const downloadPromise = runDownloadCommand(this.active, this.options.onProgress, items.length)
       this.options.onProgress({ percent: 0, message: '다운로드를 시작하는 중…' })
-      const printedOutput = await downloadPromise
-      const finalPath = printedOutput || outputPath
-      const metadataPath = request.writeMetadata ? join(request.directory, `${stem}.txt`) : undefined
-      if (metadataPath) await writeFile(metadataPath, writeMetadataText(info, media.canonicalUrl), { encoding: 'utf8', mode: 0o600 })
+      const printedOutputs = await downloadPromise
+      const finalPaths = printedOutputs.length > 0
+        ? printedOutputs
+        : media.isCollection
+          ? []
+          : [join(request.directory, `${stem}.mp4`)]
+      if (finalPaths.length === 0) throw new Error('저장된 영상 파일을 확인하지 못했습니다. 다시 시도해 주세요.')
+      const metadataPaths: string[] = []
+      if (request.writeMetadata) {
+        for (const [index, filePath] of finalPaths.entries()) {
+          const metadataPath = join(dirname(filePath), `${parse(filePath).name}.txt`)
+          await writeFile(
+            metadataPath,
+            writeMetadataText(items[index] ?? firstItem, media.canonicalUrl),
+            { encoding: 'utf8', mode: 0o600 }
+          )
+          metadataPaths.push(metadataPath)
+        }
+      }
       this.options.onProgress({ percent: 100, message: '저장이 완료되었습니다.' })
-      return { filePath: finalPath, metadataPath, title: info.title?.trim() || basename(finalPath), width: info.width, height: info.height }
+      const firstPath = finalPaths[0]
+      return {
+        filePath: firstPath,
+        filePaths: finalPaths,
+        metadataPath: metadataPaths[0],
+        metadataPaths: metadataPaths.length > 0 ? metadataPaths : undefined,
+        openPath: media.isCollection ? request.directory : firstPath,
+        savedCount: finalPaths.length,
+        title: media.isCollection ? `${finalPaths.length}개 동영상 스토리` : info.title?.trim() || basename(firstPath),
+        width: finalPaths.length === 1 ? firstItem.width : undefined,
+        height: finalPaths.length === 1 ? firstItem.height : undefined
+      }
     } catch (error) {
-      if (this.active?.cancelled && outputPath) {
-        await Promise.all([
-          rm(outputPath, { force: true }),
-          rm(`${outputPath}.part`, { force: true })
-        ])
+      if (this.active?.cancelled) {
+        await Promise.all([...cleanupPaths].flatMap((path) => [
+          rm(path, { force: true }),
+          rm(`${path}.part`, { force: true })
+        ]))
       }
       throw error
     } finally {

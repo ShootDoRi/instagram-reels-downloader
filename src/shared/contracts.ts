@@ -17,7 +17,11 @@ export interface DownloadProgress {
 
 export interface DownloadResult {
   filePath: string
+  filePaths: string[]
   metadataPath?: string
+  metadataPaths?: string[]
+  openPath: string
+  savedCount: number
   title: string
   width?: number
   height?: number

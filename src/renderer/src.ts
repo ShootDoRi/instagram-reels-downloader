@@ -71,7 +71,10 @@ function showResult(result: DownloadResult): void {
   resultCard.hidden = false
   const dimensions = result.width && result.height ? ` · ${result.width}×${result.height}` : ''
   resultTitle.textContent = result.title
-  resultDetail.textContent = `${result.filePath}${dimensions}`
+  resultDetail.textContent = result.savedCount > 1
+    ? `${result.openPath} · MP4 ${result.savedCount}개`
+    : `${result.filePath}${dimensions}`
+  openResultButton.textContent = result.savedCount > 1 ? '폴더 열기' : '파일 열기'
 }
 
 async function initialize(): Promise<void> {
@@ -164,7 +167,7 @@ cancelButton.addEventListener('click', async () => {
 openResultButton.addEventListener('click', async () => {
   if (!lastResult) return
   try {
-    await window.appApi.openPath(lastResult.filePath)
+    await window.appApi.openPath(lastResult.openPath)
   } catch {
     setMessage('저장한 파일을 열지 못했습니다.', 'error')
   }
@@ -175,7 +178,7 @@ window.appApi.onDownloadComplete((result) => {
   setDownloading(false)
   setProgress(100, '저장이 완료되었습니다.')
   showResult(result)
-  setMessage('릴스를 저장했습니다.', 'success')
+  setMessage(result.savedCount > 1 ? `동영상 스토리 ${result.savedCount}개를 저장했습니다.` : '영상을 저장했습니다.', 'success')
 })
 window.appApi.onDownloadError((error) => {
   setDownloading(false)

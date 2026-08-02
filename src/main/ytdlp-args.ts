@@ -7,8 +7,11 @@ export function formatSelector(quality: DownloadQuality): string {
   return `${base}/best[ext=mp4]`
 }
 
-export function buildInfoArgs(url: string, cookiePath: string): string[] {
-  return ['--no-playlist', '--skip-download', '--dump-single-json', '--cookies', cookiePath, url]
+export function buildInfoArgs(url: string, cookiePath: string, allowPlaylist = false): string[] {
+  return [
+    ...(allowPlaylist ? [] : ['--no-playlist']),
+    '--skip-download', '--dump-single-json', '--cookies', cookiePath, url
+  ]
 }
 
 export function buildDownloadArgs(options: {
@@ -16,15 +19,17 @@ export function buildDownloadArgs(options: {
   cookiePath: string
   outputTemplate: string
   quality: DownloadQuality
+  allowPlaylist?: boolean
 }): string[] {
   return [
-    '--no-playlist',
+    ...(options.allowPlaylist ? [] : ['--no-playlist']),
     '--no-part',
     '--no-overwrites',
     '--newline',
     '--format', formatSelector(options.quality),
     '--output', options.outputTemplate,
     '--progress-template', 'download:PROGRESS:%(progress._percent_str)s|%(progress.downloaded_bytes)s|%(progress.total_bytes)s',
+    '--print', 'before_dl:START:%(filename)s',
     '--print', 'after_move:RESULT:%(filepath)s',
     '--cookies', options.cookiePath,
     options.url

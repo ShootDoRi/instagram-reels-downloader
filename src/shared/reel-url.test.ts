@@ -5,6 +5,7 @@ describe('parseInstagramMediaUrl', () => {
   it('정규화된 릴스 URL과 shortcode를 반환한다', () => {
     expect(parseInstagramMediaUrl('https://www.instagram.com/reel/Cx_A-42/?igsh=example')).toEqual({
       canonicalUrl: 'https://www.instagram.com/reel/Cx_A-42/',
+      isCollection: false,
       mediaId: 'Cx_A-42',
       kind: 'reel'
     })
@@ -13,7 +14,17 @@ describe('parseInstagramMediaUrl', () => {
   it('사용자명과 숫자 ID가 포함된 스토리 URL을 허용한다', () => {
     expect(parseInstagramMediaUrl('https://www.instagram.com/stories/ye.s_day/3944584301409041186/?utm_source=test')).toEqual({
       canonicalUrl: 'https://www.instagram.com/stories/ye.s_day/3944584301409041186/',
+      isCollection: false,
       mediaId: '3944584301409041186',
+      kind: 'story'
+    })
+  })
+
+  it('사용자명까지만 있는 활성 스토리 목록 URL을 허용한다', () => {
+    expect(parseInstagramMediaUrl('https://www.instagram.com/stories/ye.s_day/?igsh=example')).toEqual({
+      canonicalUrl: 'https://www.instagram.com/stories/ye.s_day/',
+      isCollection: true,
+      mediaId: 'ye.s_day',
       kind: 'story'
     })
   })

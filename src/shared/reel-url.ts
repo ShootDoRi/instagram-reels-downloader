@@ -2,6 +2,7 @@ export type InstagramMediaKind = 'reel' | 'story'
 
 export interface ParsedInstagramMediaUrl {
   canonicalUrl: string
+  isCollection: boolean
   mediaId: string
   kind: InstagramMediaKind
 }
@@ -29,17 +30,26 @@ export function parseInstagramMediaUrl(rawUrl: string): ParsedInstagramMediaUrl 
   if (reelMatch) {
     return {
       kind: 'reel',
+      isCollection: false,
       mediaId: reelMatch[1],
       canonicalUrl: `https://www.instagram.com/reel/${reelMatch[1]}/`
     }
   }
 
-  const storyMatch = /^\/stories\/([A-Za-z0-9._]+)\/(\d+)\/?$/.exec(url.pathname)
+  const storyMatch = /^\/stories\/([A-Za-z0-9._]+)(?:\/(\d+))?\/?$/.exec(url.pathname)
   if (storyMatch) {
+    const username = storyMatch[1]
+    const storyId = storyMatch[2]
+    if (username.toLowerCase() === 'highlights' && !storyId) {
+      throw new Error('하이라이트 URL에는 숫자 ID가 필요합니다.')
+    }
     return {
       kind: 'story',
-      mediaId: storyMatch[2],
-      canonicalUrl: `https://www.instagram.com/stories/${storyMatch[1]}/${storyMatch[2]}/`
+      isCollection: !storyId,
+      mediaId: storyId || username,
+      canonicalUrl: storyId
+        ? `https://www.instagram.com/stories/${username}/${storyId}/`
+        : `https://www.instagram.com/stories/${username}/`
     }
   }
 

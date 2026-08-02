@@ -44,8 +44,30 @@ describe('DownloadService', () => {
         writeMetadata: true
       })
       expect(await readFile(result.filePath, 'utf8')).toBe('fake video')
+      expect(result.savedCount).toBe(1)
       expect(await readFile(result.metadataPath!, 'utf8')).toContain('테스트 캡션')
       expect(progress).toContain(50)
+      expect((await readdir(directory)).filter((entry) => entry.startsWith('ig-reels-cookies-'))).toEqual([])
+    })
+  })
+
+  it('사용자명까지만 있는 스토리 URL의 활성 동영상을 모두 서로 다른 파일로 저장한다', async () => {
+    await withTempDirectory(async (directory) => {
+      const outputDirectory = join(directory, 'output')
+      const service = createService(directory, 'success')
+      const result = await service.download({
+        url: 'https://www.instagram.com/stories/fake.user/',
+        directory: outputDirectory,
+        quality: 'best',
+        fileName: '오늘의 스토리',
+        writeMetadata: true
+      })
+      expect(result.savedCount).toBe(2)
+      expect(result.filePaths).toHaveLength(2)
+      expect(new Set(result.filePaths).size).toBe(2)
+      expect(result.openPath).toBe(outputDirectory)
+      for (const filePath of result.filePaths) expect(await readFile(filePath, 'utf8')).toBe('fake video')
+      expect(result.metadataPaths).toHaveLength(2)
       expect((await readdir(directory)).filter((entry) => entry.startsWith('ig-reels-cookies-'))).toEqual([])
     })
   })
@@ -76,6 +98,26 @@ describe('DownloadService', () => {
       })
       await expect(pending).rejects.toThrow('취소했습니다')
       await expect(stat(join(directory, 'cancelled.mp4'))).rejects.toThrow()
+      expect(service.isRunning()).toBe(false)
+    })
+  })
+
+  it('여러 스토리 저장 중 취소해도 이미 쓰기 시작한 파일을 남기지 않는다', async () => {
+    await withTempDirectory(async (directory) => {
+      const outputDirectory = join(directory, 'output')
+      let service: DownloadService
+      service = createService(directory, 'collection-slow', (event) => {
+        if (event.message.includes('동영상 1/2')) service.cancel()
+      })
+      await expect(service.download({
+        url: 'https://www.instagram.com/stories/fake.user/',
+        directory: outputDirectory,
+        quality: 'best',
+        fileName: 'cancelled stories',
+        writeMetadata: false
+      })).rejects.toThrow('취소했습니다')
+      const remainingVideos = await readdir(outputDirectory).catch(() => [])
+      expect(remainingVideos.filter((entry) => entry.endsWith('.mp4') || entry.endsWith('.part'))).toEqual([])
       expect(service.isRunning()).toBe(false)
     })
   })
