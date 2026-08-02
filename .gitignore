@@ -4,3 +4,9 @@ release/
 resources/yt-dlp.exe
 *.log
 .vite/
+coverage/
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db

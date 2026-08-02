@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest a focused improvement to the app or maintainer workflow
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please explain the user problem before proposing an implementation. Requests for bulk scraping, credential collection, or unauthorized access will not be accepted.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: textarea
+    id: security
+    attributes:
+      label: Security and privacy impact
+      description: Explain whether the change affects authentication, cookies, local files, or external requests.
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Responsible-use confirmation
+      options:
+        - label: This request is intended only for media users own or are authorized to save.
+          required: true
