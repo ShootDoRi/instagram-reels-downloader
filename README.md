@@ -44,7 +44,7 @@
 2. PowerShell에서 설치 파일의 체크섬을 확인합니다.
 
    ```powershell
-   Get-FileHash -LiteralPath '.\Instagram 릴스 다운로더 Setup 1.1.3.exe' -Algorithm SHA256
+   Get-FileHash -LiteralPath '.\Instagram-Reels-Downloader-Setup-1.1.3.exe' -Algorithm SHA256
    ```
 
 3. 체크섬이 `SHA256SUMS.txt`와 일치하면 설치 프로그램을 실행합니다.
