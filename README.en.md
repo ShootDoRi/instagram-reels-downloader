@@ -6,6 +6,8 @@
 
 English | [한국어](README.md)
 
+![Instagram Reels and Stories Downloader app](docs/assets/app-overview.png)
+
 A privacy-conscious Windows desktop app for saving Instagram Reels and video
 Stories that you own or are authorized to download. It is built with
 Electron/TypeScript and uses a separate Chrome or Edge window for user-managed
