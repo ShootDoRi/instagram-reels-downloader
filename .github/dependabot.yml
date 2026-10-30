@@ -8,6 +8,10 @@ updates:
       time: "09:00"
       timezone: Asia/Seoul
     open-pull-requests-limit: 5
+    # Electron 45 embeds Node 24; revisit when Electron upgrades its Node major.
+    ignore:
+      - dependency-name: "@types/node"
+        versions: [">=25.0.0"]
     groups:
       npm-minor-and-patch:
         applies-to: version-updates
